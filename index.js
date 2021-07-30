@@ -1,23 +1,72 @@
 const axios = require("axios");
 const utils = require("./utils");
-async function run() {
-  const browser = await utils.getPuppeteerBrowser();
-  const page = await browser.newPage();
-  async function waitThenGetElement(selector, unique) {
-    await page.waitForSelector(selector, { timeout: 60000 });
-    await utils.sleep(2000);
-    if (unique) {
-      return await page.$(selector);
+const fs = require("fs");
+function getFullProductInfo(article){
+    const url = `www.spreadshirt.com/shop/design/-D${article.id}?sellable=${article.sellableId}`;
+    const image = `https://image.spreadshirtmedia.com/image-server/v1/mp/products/${article.imageId}/views/width=700,height=700`;
+    const {name, ptName} = article;
+    return { name, ptName, url, image : `=IMAGE("${image}")`, imagePath: `${article.id}.jpg`};
+}
+function textToSlug(text){
+  return text.trim().toLowerCase()
+  .replace(/[^\w ]+/g,'')
+  .replace(/ +/g,'-')
+}
+function filterName(name, whitelist, blacklist){
+  function nameContaisWords(list){
+    const splittedList = list.split(",").map(item=>item.trim().toLowerCase());
+    return splittedList.findIndex(item=>item.length && name.toLowerCase().includes(item))>=0;
+  }
+  const isWhitelisted = nameContaisWords(whitelist);
+  const isBlacklisted = nameContaisWords(blacklist);
+  console.log(name, isWhitelisted, isBlacklisted, whitelist,blacklist)
+  return isWhitelisted || !isBlacklisted;
+}
+function getQuery(query, pageNum){
+  const QUERY_URL = `https://www.spreadshirt.com/shopData/pageData/shop/${query}/?page=${pageNum}&locale=us_US`;
+  return QUERY_URL;
+}
+async function getListOfProducts(keyword, whitelist,blacklist){
+    const query = textToSlug(keyword);
+    let response = await utils.getJson(getQuery(query, 1)); 
+    let {pageCount, articles} = response.listData;
+    console.log(pageCount);
+    for(let i = 2; i <= 1; i++){
+      try{
+        await utils.sleep(200);
+        response = await utils.getJson(getQuery(query, i)); 
+        articles.push(...response.listData.articles);
+        console.log("Fetching articles with keyword " + keyword + " at " +  i+1 + "/" + pageCount);
+      }
+      catch{
+        console.log("Fetching articles with keyword " + keyword + " failed at page " + i);
+      }
     }
-    return await page.$$(selector);
-  }
-  async function typeToInput(selector, text) {
-    await waitThenGetElement(selector);
-    await page.type(selector, text, { delay: 50 });
-  }
-  async function evalScript(selector, evalCb) {
-    await waitThenGetElement(selector);
-    return await page.$eval(selector, evalCb);
+    articles = articles.filter(article=>filterName(article.name, whitelist,blacklist))
+    for(let j = 0; j < articles.length; j++){
+      const {id, imageId} = articles[j];
+      fs.mkdirSync(`./output/${query}`, { recursive: true });
+      try{ 
+        console.log("Downloading image with keyword "  + keyword + " at " + (j+1) + "/" + articles.length)
+        await utils.download_image(`https://image.spreadshirtmedia.com/image-server/v1/mp/products/${imageId}/views/width=400,height=400`,`./output/${query}/${id}.jpg`)
+      }catch(e){
+        console.log("Failed to download image with id " + id);
+        console.log(e);
+      }
+    }
+    return articles.map(article=>getFullProductInfo(article));
+}
+async function run() {
+  const iData = await utils.readCsv("./input.csv")
+  for(let i = 0; i < iData.length; i++) {
+      const item = iData[i];
+      try {
+        const list = await getListOfProducts(item.keyword, item.whitelist,item.blacklist);
+        await utils.writeCsv("./output/" + item.keyword + ".csv", list)
+      } catch (error) {
+        console.log(error);
+      }
+      
   }
 }
 

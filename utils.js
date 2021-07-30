@@ -1,6 +1,7 @@
 const csv = require("csv-parser");
 const fs = require("fs");
 const path = require("path");
+const axios = require("axios");
 
 const ObjectsToCsv = require("objects-to-csv");
 
@@ -63,6 +64,24 @@ const getDomParser = () => {
   var DomParser = require("dom-parser");
   return new DomParser();
 };
+const getJson = (url)=>{
+  return new Promise((resolve, reject) => {
+    axios.get(url).then((response=>resolve(response.data))).catch(reject)
+  })
+}
+const download_image = (url, image_path) =>
+  axios({
+    url,
+    responseType: 'stream',
+  }).then(
+    response =>
+      new Promise((resolve, reject) => {
+        response.data
+          .pipe(fs.createWriteStream(image_path))
+          .on('finish', () => resolve())
+          .on('error', e => reject(e));
+      }),
+  );
 module.exports = {
   readCsv,
   writeCsv,
@@ -72,4 +91,6 @@ module.exports = {
   deepClone,
   getAbsPath,
   pathExists,
+  getJson,
+  download_image
 };
