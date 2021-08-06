@@ -3,7 +3,7 @@ const utils = require("./utils");
 const fs = require("fs");
 function getFullProductInfo(article) {
   const url = `www.spreadshirt.com/shop/design/-D${article.id}?sellable=${article.sellableId}`;
-  const image = `https://image.spreadshirtmedia.com/image-server/v1/mp/products/${article.imageId}/views/width=700,height=700`;
+  const image = `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${article.imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.webp`;
   const { name, ptName } = article;
   return {
     name,
@@ -37,7 +37,7 @@ function filterName(name, whitelist, blacklist) {
   return isWhitelisted || !isBlacklisted;
 }
 function getQuery(query, pageNum) {
-  const QUERY_URL = `https://www.spreadshirt.com/shopData/pageData/shop/clothing/t-shirts/${query}/?page=${pageNum}&locale=us_US`;
+  const QUERY_URL = `https://www.spreadshirt.com/shopData/pageData/shop/clothing/t-shirts/${query}/?page=${pageNum}&locale=us_US&color=4`;
   return QUERY_URL;
 }
 async function getListOfProducts(keyword, whitelist, blacklist) {
@@ -84,7 +84,7 @@ async function getListOfProducts(keyword, whitelist, blacklist) {
         continue;
       }
       await utils.download_image(
-        `https://image.spreadshirtmedia.com/image-server/v1/mp/products/${imageId}/views/width=400,height=400`,
+        `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.webp`,
         `./output/${query}/${id}.jpg`
       );
     } catch (e) {
