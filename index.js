@@ -3,7 +3,7 @@ const utils = require("./utils");
 const fs = require("fs");
 function getFullProductInfo(article) {
   const url = `www.spreadshirt.com/shop/design/-D${article.id}?sellable=${article.sellableId}`;
-  const image = `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${article.imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.jpg`;
+  const image = `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${article.imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.webp`;
   const { name, ptName } = article;
   return {
     name,
@@ -45,18 +45,13 @@ async function getListOfProducts(keyword, whitelist, blacklist) {
   let response = await utils.getJson(getQuery(query, 1));
   let { pageCount, articles } = response.listData;
   console.log(pageCount);
-  for (let i = 2; i <= pageCount; i++) {
+  for (let i = 2; i <= 5; i++) {
     try {
       await utils.sleep(50);
       response = await utils.getJson(getQuery(query, i));
       articles.push(...response.listData.articles);
       console.log(
-        "Fetching articles with keyword " +
-          keyword +
-          " at " +
-          i +
-          "/" +
-          pageCount
+        "Fetching articles with keyword " + keyword + " at " + i + "/" + 5
       );
     } catch {
       console.log(
@@ -84,8 +79,8 @@ async function getListOfProducts(keyword, whitelist, blacklist) {
         continue;
       }
       await utils.download_image(
-        `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.jpg`,
-        `./output/${query}/${id}.jpg`
+        `https://image.spreadshirtmedia.com/image-server/v1/mp/compositions/${imageId}/views/1,width=378,height=378,appearanceId=2,backgroundColor=000000,noPt=true.webp`,
+        `./output/${query}/${id}.webp`
       );
     } catch (e) {
       console.log("Failed to download image with id " + id);
